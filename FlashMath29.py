@@ -1,6 +1,8 @@
 import tkinter as tk
 import random
 from tkinter import messagebox
+import time
+import threading
 
 class MathTrainingApp:
     def __init__(self, root):
@@ -153,6 +155,9 @@ class FlashNumberTraining:
         self.font_size = tk.IntVar(value=120)
         self.calc_font_size = tk.IntVar(value=24)
         self.generated_numbers = []
+        self.delayTime = 11         # Set the delay time
+        self.startTime = None       # Set the start time when user start the session
+        self.endTime = None         # Collect the end time when user end the session
         
         self.texts = {
             "English": {
@@ -380,7 +385,22 @@ Liên Hệ Hỗ Trợ: Nếu bạn cần hỗ trợ hoặc có câu hỏi, vui l
         
         self.current_index += 1
         self.root.after(int(self.display_speed.get() * 1000), self.show_next_number)
-    
+
+
+    # Function start counting the time when show_next_number complete
+    def startCountdownUserTime(self):
+        self.startTime = time.time()
+
+    def submit_button_clicked(self):
+        self.endTime = time.time()
+        if self.startTime is not None and self.endTime is not None:
+            elapsed_time = self.endTime - self.startTime
+            print(f"You spent {elapsed_time:.2f} seconds to complete")
+            messagebox.showinfo("Elapsed Time", f"You spent {elapsed_time:.2f} seconds to complete")
+        else:
+            print("Timer was not started properly.")
+
+
     def stop(self):
         self.stop_display = True
     
@@ -388,7 +408,7 @@ Liên Hệ Hỗ Trợ: Nếu bạn cần hỗ trợ hoặc có câu hỏi, vui l
         for widget in self.root.winfo_children():
             widget.destroy()
         
-        correct_sum = sum(self.generated_numbers)
+        # correct_sum = sum(self.generated_numbers)
         
         language = self.language.get()
         texts = self.texts[language]
@@ -396,13 +416,29 @@ Liên Hệ Hỗ Trợ: Nếu bạn cần hỗ trợ hoặc có câu hỏi, vui l
         tk.Label(self.root, text=texts["your_answer"], font=("Arial", 28)).pack(pady=10)
         self.user_answer = tk.Entry(self.root, font=("Arial", 28))
         self.user_answer.pack(pady=10)
-        tk.Button(self.root, text=texts["submit_button"], command=lambda: self.check_answer(correct_sum), font=("Arial", 28)).pack(pady=10)
+        tk.Button(self.root, text=texts["submit_button"], command=lambda: [self.startCountDelayTime(), self.submit_button_clicked()], font=("Arial", 28)).pack(pady=10)
         
         stop_button_frame = tk.Frame(self.root)
         stop_button_frame.pack(side="bottom", pady=20)
         
         tk.Button(stop_button_frame, text=texts["stop_button"], command=self.stop, font=("Arial", 24)).pack()
+        self.startCountdownUserTime()
+
     
+    def startCountDelayTime(self):
+        correct_sum = sum(self.generated_numbers)
+
+        def countdown():
+            for remaining in range(self.delayTime, 0, -1):
+                print(f"Time remaining: {remaining} seconds")
+                time.sleep(1)
+            self.check_answer(correct_sum)
+
+        countdown_thread = threading.Thread(target=countdown)
+        countdown_thread.start()
+
+    
+
     def check_answer(self, correct_sum):
         try:
             user_sum = int(self.user_answer.get())
